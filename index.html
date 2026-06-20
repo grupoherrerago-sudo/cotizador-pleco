@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>PLECO · Cotizador de materias primas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#11243A; --navy2:#1B3457; --orange:#E8742C; --orange-d:#cf6420;
+  --paper:#F7F5F1; --card:#FFFFFF; --ink:#1A1A1A; --steel:#5B6470;
+  --line:#E4DFD6; --soft:#F0ECE4; --ok:#1F7A4D; --bad:#B23B3B;
+  --b1:#7FA8D6; --b2:#5B8BC4; --b3:#3E6FA8; --btambo:#E8742C;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:Montserrat,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--paper); color:var(--ink); -webkit-text-size-adjust:100%;}
+.tabnum{font-variant-numeric:tabular-nums}
+button{font-family:inherit; cursor:pointer; border:0}
+input,select{font-family:inherit; font-size:16px}
+header.app{position:sticky; top:0; z-index:40; background:var(--navy); color:#fff;
+  display:flex; align-items:center; gap:14px; padding:10px 16px; border-bottom:3px solid var(--orange);}
+.logo{display:flex; align-items:center; gap:9px}
+.logo .word{font-weight:800; font-size:21px; letter-spacing:.5px; line-height:1}
+.logo .sub{font-size:8px; letter-spacing:3px; color:#9fb0c4; font-weight:600; margin-top:2px}
+.tabs{margin-left:auto; display:flex; gap:4px; background:rgba(255,255,255,.07); padding:4px; border-radius:10px}
+.tabs button{background:transparent; color:#c4cedb; font-weight:600; font-size:13px; padding:8px 14px; border-radius:7px; white-space:nowrap}
+.tabs button.on{background:var(--orange); color:#fff}
+main{max-width:1040px; margin:0 auto; padding:16px 16px 120px}
+.view{display:none} .view.on{display:block}
+h2.sec{font-size:13px; letter-spacing:2px; text-transform:uppercase; color:var(--orange); margin:0 0 4px; font-weight:700}
+.lead{color:var(--steel); font-size:13px; margin:0 0 14px}
+.entry{background:var(--navy); border-radius:14px; padding:14px; display:grid; grid-template-columns:1fr 120px 96px 110px; gap:10px; align-items:end}
+.entry .fld{display:flex; flex-direction:column; gap:5px}
+.entry label{font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:#9fb0c4; font-weight:600}
+.entry input,.entry select{padding:13px 12px; border-radius:9px; border:1px solid transparent; background:#fff; color:var(--ink); font-weight:600; width:100%}
+.entry input:focus,.entry select:focus{outline:2px solid var(--orange)}
+.btn-add{background:var(--orange); color:#fff; font-weight:700; font-size:15px; padding:14px 10px; border-radius:9px; height:48px}
+.btn-add:hover{background:var(--orange-d)}
+.hint{grid-column:1/-1; color:#9fb0c4; font-size:11px; margin-top:-2px}
+.ac{position:relative}
+.ac-list{position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 30px rgba(17,36,58,.22); max-height:280px; overflow:auto; z-index:60; display:none}
+.ac-list.show{display:block}
+.ac-item{padding:11px 13px; display:flex; justify-content:space-between; gap:10px; align-items:center; border-bottom:1px solid var(--soft); font-size:14px}
+.ac-item:last-child{border-bottom:0}
+.ac-item.active,.ac-item:hover{background:var(--soft)}
+.ac-item .nm{font-weight:600}
+.ac-item .pr{color:var(--steel); font-size:12px; white-space:nowrap}
+.ac-empty{padding:14px; color:var(--steel); font-size:13px; text-align:center}
+.ticket{background:var(--card); border:1px solid var(--line); border-radius:14px; margin-top:16px; overflow:hidden}
+.ticket .thead{display:grid; grid-template-columns:1fr 90px 84px 122px 104px 34px; background:var(--soft); padding:11px 14px; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--steel); font-weight:700}
+.ticket .thead span:nth-child(n+2){text-align:right}
+.row{display:grid; grid-template-columns:1fr 90px 84px 122px 104px 34px; align-items:center; padding:10px 14px; border-top:1px solid var(--soft); animation:pop .18s ease}
+@keyframes pop{from{opacity:0; transform:translateY(-4px)}to{opacity:1; transform:none}}
+.c-cant,.c-badge,.c-pu,.c-imp{display:flex; align-items:center; justify-content:flex-end; gap:6px}
+.pnm{font-weight:600; font-size:14px}
+.lt{color:var(--steel); font-size:11px}
+.q{font-weight:600}
+.imp{color:var(--navy); font-weight:700}
+.pu-in{width:104px; text-align:right; padding:7px 8px; border:1px solid var(--line); border-radius:7px; font-weight:600; font-family:inherit; font-size:14px; background:#fff; color:var(--ink)}
+.pu-in:focus{outline:none; border-color:var(--orange)}
+.pu-in.man{border-color:var(--orange); background:#fff7f0; color:var(--orange-d)}
+.ml{display:none}
+.badge{font-size:10px; font-weight:700; color:#fff; padding:3px 8px; border-radius:20px; letter-spacing:.5px; white-space:nowrap}
+.badge.t1{background:var(--b1)} .badge.t2{background:var(--b2)} .badge.t3{background:var(--b3)} .badge.tt{background:var(--btambo)} .badge.man{background:var(--orange)}
+.del{background:transparent; color:var(--steel); font-size:18px; line-height:1; padding:4px; border-radius:6px; justify-self:center}
+.del:hover{color:var(--bad); background:#fbeaea}
+.empty{padding:40px 16px; text-align:center; color:var(--steel)}
+.empty b{display:block; color:var(--ink); font-weight:700; margin-bottom:4px}
+.grid2{display:grid; grid-template-columns:1fr 360px; gap:16px; margin-top:16px; align-items:start}
+.card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px}
+.card h3{margin:0 0 12px; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--navy); font-weight:700}
+.frow{display:flex; flex-direction:column; gap:5px; margin-bottom:10px}
+.frow label{font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--steel); font-weight:600}
+.frow input,.frow textarea{padding:10px 11px; border:1px solid var(--line); border-radius:8px; background:#fff; width:100%}
+.frow textarea{min-height:54px; resize:vertical; font-size:14px}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.tot-line{display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px}
+.tot-line.big{border-top:2px solid var(--navy); margin-top:6px; padding-top:12px; font-size:20px; font-weight:800; color:var(--navy)}
+.toggle{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); cursor:pointer}
+.toggle input{width:18px; height:18px; accent-color:var(--orange)}
+.mini{width:70px!important; text-align:right; padding:7px 8px!important; border:1px solid var(--line); border-radius:7px}
+.cta{display:block; width:100%; background:var(--navy); color:#fff; font-weight:700; font-size:15px; padding:14px; border-radius:10px; margin-top:8px}
+.cta.orange{background:var(--orange)} .cta.orange:hover{background:var(--orange-d)}
+.cta:hover{background:var(--navy2)}
+.ghost{background:#fff; color:var(--navy); border:1px solid var(--line)} .ghost:hover{background:var(--soft)}
+.sync{margin-bottom:14px; border-left:4px solid var(--orange)}
+.syncrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.syncrow .cta{width:auto; margin:0; padding:12px 18px}
+.dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; background:var(--steel)}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)}
+.dbtools{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0}
+.dbtools button{padding:10px 14px; border-radius:9px; font-weight:600; font-size:13px; background:#fff; color:var(--navy); border:1px solid var(--line)}
+.dbtools button:hover{background:var(--soft)}
+.dbtools .pr{background:var(--orange); color:#fff; border:0}
+.dbwrap{background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:auto}
+table.db{width:100%; border-collapse:collapse; min-width:680px; font-size:13px}
+table.db th{background:var(--navy); color:#fff; font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:11px 10px; text-align:left; position:sticky; top:0}
+table.db th:nth-child(n+3){text-align:right}
+table.db td{border-top:1px solid var(--soft); padding:6px 8px}
+table.db input{width:100%; border:1px solid transparent; background:transparent; padding:7px 8px; border-radius:6px; font-weight:600}
+table.db input:focus{border-color:var(--orange); background:#fff; outline:none}
+table.db td.num input{text-align:right}
+table.db tr:nth-child(even){background:#faf8f4}
+.delp{color:var(--steel); background:transparent; font-size:16px} .delp:hover{color:var(--bad)}
+.count{font-size:12px; color:var(--steel); margin:10px 2px}
+#hoja{background:#fff; max-width:780px; margin:0 auto; border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.h-top{background:var(--navy); color:#fff; padding:24px 28px; display:flex; justify-content:space-between; align-items:flex-start; gap:20px}
+.h-top .ttl{font-size:11px; letter-spacing:3px; color:#9fb0c4; font-weight:700; text-transform:uppercase}
+.h-top .folio{font-size:24px; font-weight:800; margin-top:4px}
+.h-meta{padding:18px 28px; display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; border-bottom:1px solid var(--line); font-size:13px}
+.h-meta div{display:flex; gap:8px}
+.h-meta .k{color:var(--steel); min-width:78px; font-weight:600; text-transform:uppercase; font-size:10px; letter-spacing:1px; padding-top:2px}
+.h-meta .v{font-weight:600}
+table.cl{width:100%; border-collapse:collapse}
+table.cl th{background:var(--soft); color:var(--navy); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:10px 28px; text-align:left}
+table.cl th:nth-child(n+2){text-align:right}
+table.cl td{padding:11px 28px; border-top:1px solid var(--soft); font-size:14px}
+table.cl td:nth-child(n+2){text-align:right; font-variant-numeric:tabular-nums}
+table.cl .pnm{font-weight:600}
+table.cl .tg{font-size:10px; color:var(--steel); font-weight:600}
+.h-tot{padding:14px 28px; display:flex; flex-direction:column; gap:6px; align-items:flex-end}
+.h-tot .l{display:flex; justify-content:space-between; width:260px; font-size:14px}
+.h-tot .l.big{border-top:2px solid var(--navy); padding-top:10px; margin-top:4px; font-size:20px; font-weight:800; color:var(--navy)}
+.h-foot{background:var(--soft); padding:16px 28px; font-size:12px; color:var(--steel); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap}
+.h-foot b{color:var(--navy)}
+.notes{padding:0 28px 18px; font-size:12px; color:var(--steel)}
+.notes b{color:var(--navy); display:block; text-transform:uppercase; letter-spacing:1px; font-size:10px; margin-bottom:3px}
+.toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--navy); color:#fff; padding:12px 20px; border-radius:30px; font-size:14px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; transition:.25s; z-index:90}
+.toast.show{transform:translateX(-50%); opacity:1}
+@media(max-width:760px){
+  .entry{grid-template-columns:1fr 1fr}
+  .entry .fld.prod{grid-column:1/-1}
+  .btn-add{grid-column:1/-1}
+  .tabs button{padding:8px 10px; font-size:12px}
+  .logo .word{font-size:18px}
+  .ticket .thead{display:none}
+  .row{grid-template-columns:1fr 1fr; gap:4px 10px; position:relative; padding:12px 14px}
+  .row .c-prod{grid-column:1/-1; padding-right:22px}
+  .c-cant,.c-pu,.c-badge{justify-content:flex-start}
+  .c-imp{justify-content:flex-end}
+  .ml{display:inline; font-size:10px; letter-spacing:.5px; text-transform:uppercase; color:var(--steel); font-weight:600}
+  .row .del{position:absolute; top:10px; right:10px; padding:2px}
+  .pu-in{width:96px}
+  .grid2{grid-template-columns:1fr}
+  .h-meta{grid-template-columns:1fr}
+  table.cl th,table.cl td{padding-left:16px; padding-right:16px}
+}
+@media print{
+  header.app,.tabs,#v-cotizar,#v-base,.printbar,.toast{display:none!important}
+  body{background:#fff} main{padding:0; max-width:100%}
+  .view{display:block!important}
+  #hoja{border:0; border-radius:0; max-width:100%}
+  @page{margin:12mm}
+}
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="logo">
+    <svg width="34" height="34" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 22 L24 9 L39 22"/><path d="M13 20 V39 H35 V20"/><circle cx="38" cy="13" r="2.5" fill="#E8742C" stroke="none"/></svg>
+    <div><div class="word">pleco</div><div class="sub">QUÍMICOS Y ESENCIAS</div></div>
+  </div>
+  <nav class="tabs">
+    <button id="t-cot" class="on" onclick="setView('cotizar')">Cotizar</button>
+    <button id="t-base" onclick="setView('base')">Base de datos</button>
+    <button id="t-cli" onclick="setView('cliente')">Vista cliente</button>
+  </nav>
+</header>
+<main>
+  <section id="v-cotizar" class="view on">
+    <h2 class="sec">Cotizador</h2>
+    <p class="lead">Escribe el producto, la cantidad y presiona <b>Enter</b> o Agregar. Se va llenando la lista.</p>
+    <div class="entry">
+      <div class="fld prod ac">
+        <label>Producto</label>
+        <input id="prod" autocomplete="off" placeholder="Escribe las primeras letras…">
+        <div id="aclist" class="ac-list"></div>
+      </div>
+      <div class="fld"><label>Cantidad</label><input id="cant" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></div>
+      <div class="fld"><label>Presentación</label><select id="modo"><option value="normal">Litros/Kg</option><option value="tambo">Tambo 170L</option></select></div>
+      <button class="btn-add" onclick="agregar()">＋ Agregar</button>
+      <div class="hint">Rangos: 1-9 · 10-19 · 20+ · Tambo = precio fijo por bidón de 170 L (cantidad = número de tambos).</div>
+    </div>
+    <div class="ticket">
+      <div class="thead"><span>Producto</span><span>Cant.</span><span>Rango</span><span class="h-pu">P. unit</span><span>Importe</span><span></span></div>
+      <div id="lineas"></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Datos de la cotización</h3>
+        <div class="frow"><label>Cliente</label><input id="c_cliente" placeholder="Nombre del cliente o empresa"></div>
+        <div class="two"><div class="frow"><label>Folio</label><input id="c_folio"></div><div class="frow"><label>Fecha</label><input id="c_fecha" type="date"></div></div>
+        <div class="two"><div class="frow"><label>Vigencia</label><input id="c_vig" placeholder="Ej. 15 días"></div><div class="frow"><label>Vendedor</label><input id="c_vend" placeholder="Tu nombre"></div></div>
+        <div class="two"><div class="frow"><label>WhatsApp</label><input id="c_wa" placeholder="961 …"></div><div class="frow"><label>Condiciones de pago</label><input id="c_pago" placeholder="Contado / contra entrega"></div></div>
+        <div class="frow"><label>Notas</label><textarea id="c_notas" placeholder="Entrega en bodega Tuxtla, etc."></textarea></div>
+      </div>
+      <div class="card">
+        <h3>Totales</h3>
+        <div class="tot-line"><span>Subtotal</span><b id="t_sub" class="tabnum">$0.00</b></div>
+        <div class="tot-line"><span>Descuento <input id="t_desc" class="mini tabnum" type="number" min="0" max="100" step="any" value="0">%</span><b id="t_descv" class="tabnum">-$0.00</b></div>
+        <div class="tot-line"><label class="toggle"><input id="t_iva" type="checkbox"> IVA 16%</label><b id="t_ivav" class="tabnum">$0.00</b></div>
+        <div class="tot-line big"><span>Total</span><span id="t_total" class="tabnum">$0.00</span></div>
+        <button class="cta orange" onclick="setView('cliente')">Ver cotización del cliente →</button>
+        <button class="cta ghost" onclick="nueva()">Nueva cotización</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-base" class="view">
+    <h2 class="sec">Base de datos</h2>
+    <p class="lead">Tus precios viven en tu Google Sheet. Edítalos ahí desde cualquier aparato y sincroniza aquí.</p>
+    <div class="card sync">
+      <h3>Sincronización con Google Sheets</h3>
+      <div class="frow"><label>Enlace de tu Google Sheet</label><input id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/…"></div>
+      <div class="syncrow">
+        <button class="cta orange" onclick="syncFromSheet(true)">↻ Sincronizar ahora</button>
+        <label class="toggle"><input id="syncOnOpen" type="checkbox" checked> Sincronizar al abrir</label>
+      </div>
+      <div class="count" id="syncStatus"><span class="dot"></span>Sin sincronizar todavía.</div>
+    </div>
+    <div class="dbtools">
+      <button class="pr" onclick="addProd()">＋ Nuevo producto</button>
+      <button onclick="exportDB()">⭳ Exportar respaldo</button>
+      <button onclick="document.getElementById('imp').click()">⭱ Importar CSV/JSON</button>
+      <input id="imp" type="file" accept=".json,.csv,text/csv,application/json" style="display:none" onchange="importFile(this)">
+      <button onclick="resetDB()">↺ Restaurar precios de junio</button>
+    </div>
+    <div class="dbwrap">
+      <table class="db"><thead><tr><th>Producto</th><th>Unidad</th><th>1-9</th><th>10-19</th><th>20+</th><th>Tambo 170L</th><th></th></tr></thead><tbody id="dbbody"></tbody></table>
+    </div>
+    <div class="count" id="dbcount"></div>
+  </section>
+
+  <section id="v-cliente" class="view">
+    <div class="printbar" style="max-width:780px;margin:0 auto 14px;display:flex;gap:10px">
+      <button class="cta orange" style="margin:0" onclick="descargarPDF()">⭳ Descargar PDF</button>
+      <button class="cta ghost" style="margin:0" onclick="descargarImg()">⭳ Descargar imagen</button>
+    </div>
+    <div id="hoja">
+      <div class="h-top">
+        <div><div class="logo">
+          <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 22 L24 9 L39 22"/><path d="M13 20 V39 H35 V20"/><circle cx="38" cy="13" r="2.5" fill="#E8742C" stroke="none"/></svg>
+          <div><div class="word" style="font-size:24px">pleco</div><div class="sub">QUÍMICOS Y ESENCIAS</div></div></div></div>
+        <div style="text-align:right"><div class="ttl">Cotización</div><div class="folio" id="o_folio">COT-0001</div></div>
+      </div>
+      <div class="h-meta">
+        <div><span class="k">Cliente</span><span class="v" id="o_cliente">—</span></div>
+        <div><span class="k">Fecha</span><span class="v" id="o_fecha">—</span></div>
+        <div><span class="k">Vigencia</span><span class="v" id="o_vig">—</span></div>
+        <div><span class="k">Vendedor</span><span class="v" id="o_vend">—</span></div>
+      </div>
+      <table class="cl"><thead><tr><th>Producto</th><th>Cantidad</th><th>P. unitario</th><th>Importe</th></tr></thead><tbody id="o_lineas"></tbody></table>
+      <div class="h-tot">
+        <div class="l"><span>Subtotal</span><span id="o_sub" class="tabnum">$0.00</span></div>
+        <div class="l" id="o_descrow"><span>Descuento</span><span id="o_desc" class="tabnum">-$0.00</span></div>
+        <div class="l" id="o_ivarow"><span>IVA 16%</span><span id="o_iva" class="tabnum">$0.00</span></div>
+        <div class="l big"><span>Total</span><span id="o_total" class="tabnum">$0.00</span></div>
+      </div>
+      <div class="notes" id="o_notaswrap"><b>Notas</b><span id="o_notas"></span></div>
+      <div class="h-foot"><div><b>Condiciones:</b> <span id="o_pago">—</span></div><div><b>Contacto:</b> <span id="o_wa">—</span> · Bodega Tuxtla Gtz.</div></div>
+    </div>
+  </section>
+</main>
+<div id="toast" class="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const SEED = [{"nombre": "Aceite de pino al 55%", "unidad": "L", "p1": 154.0, "p2": 144.0, "p3": 133.5, "tambo": 22695}, {"nombre": "Aceite de silicon 1000 para almoroll", "unidad": "L", "p1": 170.0, "p2": 160.0, "p3": 160.0, "tambo": 27200}, {"nombre": "Aceite mineral", "unidad": "L", "p1": 60.2, "p2": 55.9, "p3": 51.6, "tambo": 8772}, {"nombre": "Acido clorihidrico", "unidad": "L", "p1": 32.2, "p2": 29.9, "p3": 27.6, "tambo": 4692}, {"nombre": "Acido fosforico", "unidad": "L", "p1": 60.2, "p2": 55.9, "p3": 51.6, "tambo": 8772}, {"nombre": "Acido sulfonico ADBS", "unidad": "L", "p1": 125.0, "p2": 115.0, "p3": 110.0, "tambo": 18700}, {"nombre": "Alcohol etilico 96", "unidad": "L", "p1": 60.2, "p2": 55.9, "p3": 51.6, "tambo": 8772}, {"nombre": "Alcohol isopropilico o IPA", "unidad": "L", "p1": 81.2, "p2": 75.4, "p3": 69.6, "tambo": 11832}, {"nombre": "AMIDA", "unidad": "L", "p1": 103.0, "p2": 95.0, "p3": 90.0, "tambo": 15300}, {"nombre": "Antiespumante", "unidad": "L", "p1": 74.2, "p2": 68.9, "p3": 63.6, "tambo": 10812}, {"nombre": "Arlatex o enturbiante hacer lechosos", "unidad": "L", "p1": 74.2, "p2": 68.9, "p3": 63.6, "tambo": 10812}, {"nombre": "B3", "unidad": "kg", "p1": 60.2, "p2": 55.0, "p3": 55.0, "tambo": 9350}, {"nombre": "Betaina", "unidad": "L", "p1": 39.2, "p2": 36.4, "p3": 33.6, "tambo": 5712}, {"nombre": "Bicromato", "unidad": "kg", "p1": 140.0, "p2": 140.0, "p3": 140.0, "tambo": 23800}, {"nombre": "Blanco optico", "unidad": "kg", "p1": 230.0, "p2": 230.0, "p3": 230.0, "tambo": 39100}, {"nombre": "Butilcellosolve", "unidad": "L", "p1": 74.2, "p2": 68.9, "p3": 63.6, "tambo": 10812}, {"nombre": "Carbonato ligero", "unidad": "kg", "p1": 75.0, "p2": 70.0, "p3": 70.0, "tambo": 11900}, {"nombre": "Carbopol", "unidad": "L", "p1": 550.0, "p2": 550.0, "p3": 550.0, "tambo": 93500}, {"nombre": "Cera p shampoo auto base", "unidad": "L", "p1": 300.0, "p2": 290.0, "p3": 290.0, "tambo": 49300}, {"nombre": "Cloro granulado", "unidad": "kg", "p1": 130.0, "p2": 120.0, "p3": 120.0, "tambo": 20400}, {"nombre": "Cloruro de benzalconio", "unidad": "L", "p1": 355.0, "p2": 330.0, "p3": 300.0, "tambo": 51000}, {"nombre": "Colorante en polvo", "unidad": "kg", "p1": 650, "p2": 440, "p3": 410, "tambo": 0, "nota": "ajustar"}, {"nombre": "Creolina", "unidad": "L", "p1": 28.0, "p2": 26.0, "p3": 24.0, "tambo": 4080}, {"nombre": "D limoneno o pertenos", "unidad": "L", "p1": 74.2, "p2": 68.9, "p3": 63.6, "tambo": 10812}, {"nombre": "EDTA liquida / sal tetrasodica liquida", "unidad": "L", "p1": 130.0, "p2": 130.0, "p3": 130.0, "tambo": 22100}, {"nombre": "EDTA POLVO / sal tetrasodica", "unidad": "kg", "p1": 130.0, "p2": 125.0, "p3": 120.0, "tambo": 20400}, {"nombre": "Emulsion de silicon 80 % p almoroll", "unidad": "L", "p1": 200.0, "p2": 185.0, "p3": 180.0, "tambo": 30600}, {"nombre": "Esencia Estandar", "unidad": "L", "p1": 315, "p2": 295, "p3": 275, "tambo": 0, "nota": "ajustar"}, {"nombre": "Esencia Jurlin", "unidad": "L", "p1": 340, "p2": 320, "p3": 300, "tambo": 0, "nota": "ajustar"}, {"nombre": "Formol", "unidad": "L", "p1": 48.0, "p2": 45.0, "p3": 41.0, "tambo": 6715}, {"nombre": "Glicerina ambar", "unidad": "L", "p1": 60.2, "p2": 55.9, "p3": 51.6, "tambo": 8772}, {"nombre": "Glicerina USP", "unidad": "L", "p1": 110.0, "p2": 102.0, "p3": 95.0, "tambo": 16150}, {"nombre": "HIPOCLORITO", "unidad": "L", "p1": 17.5, "p2": 17.0, "p3": 16.0, "tambo": 2635}, {"nombre": "HIPOCLORITO por tambo cerrado de 200lts", "unidad": "L", "p1": 14.0, "p2": 14.0, "p3": 14.0, "tambo": 2380}, {"nombre": "LAURIL AL 28 %", "unidad": "L", "p1": 34.0, "p2": 32.0, "p3": 29.6, "tambo": 4675}, {"nombre": "Microemulsion p / shampoo,almoroll y teflon", "unidad": "L", "p1": 95.2, "p2": 88.4, "p3": 81.6, "tambo": 13872}, {"nombre": "N70 ( para hacer lauril)", "unidad": "L", "p1": 68.0, "p2": 65.0, "p3": 62.0, "tambo": 10540}, {"nombre": "Nacarante o Aperlante", "unidad": "L", "p1": 67.2, "p2": 62.4, "p3": 57.6, "tambo": 9792}, {"nombre": "Nipagil o Metil parabeno", "unidad": "L", "p1": 350.0, "p2": 350.0, "p3": 350.0, "tambo": 59500}, {"nombre": "Nonil Fenol 10 Mol", "unidad": "L", "p1": 115.0, "p2": 108.0, "p3": 105.0, "tambo": 17850}, {"nombre": "Oxido de Amina", "unidad": "L", "p1": 60.2, "p2": 55.9, "p3": 51.6, "tambo": 8772}, {"nombre": "Pastillas de cloro de \"1\"", "unidad": "kg", "p1": 130.0, "p2": 120.0, "p3": 120.0, "tambo": 20400}, {"nombre": "Pastillas de cloro de \"3\"", "unidad": "kg", "p1": 130.0, "p2": 120.0, "p3": 120.0, "tambo": 20400}, {"nombre": "Peroxido de hidrogeno", "unidad": "L", "p1": 39.2, "p2": 36.4, "p3": 33.6, "tambo": 5712}, {"nombre": "Propilenglicol", "unidad": "L", "p1": 72.0, "p2": 67.0, "p3": 62.0, "tambo": 10540}, {"nombre": "Reactivo", "unidad": "L", "p1": 74.2, "p2": 68.9, "p3": 63.6, "tambo": 10812}, {"nombre": "Sosa en escamas", "unidad": "kg", "p1": 39.2, "p2": 36.4, "p3": 33.6, "tambo": 5712}, {"nombre": "Sosa liquida", "unidad": "L", "p1": 39.2, "p2": 36.4, "p3": 33.6, "tambo": 5712}, {"nombre": "Suavipasta", "unidad": "L", "p1": 81.0, "p2": 77.0, "p3": 75.0, "tambo": 12750}, {"nombre": "Sulfapon ( para shampoo)", "unidad": "L", "p1": 39.2, "p2": 36.4, "p3": 33.6, "tambo": 5712}, {"nombre": "Trietanolamina al 85 %", "unidad": "L", "p1": 81.2, "p2": 75.4, "p3": 69.6, "tambo": 11832}, {"nombre": "Tween 20", "unidad": "L", "p1": 144.2, "p2": 133.9, "p3": 123.6, "tambo": 21012}];
+const MONEY = n => '$' + (Number(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const LS = {
+  get(k,d){ try{const v=localStorage.getItem(k); return v==null?d:JSON.parse(v)}catch(e){return d} },
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+};
+let productos = LS.get('pleco_db', null) || JSON.parse(JSON.stringify(SEED));
+let lineas = [];
+let folioNum = LS.get('pleco_folio', 1);
+let sel = -1, chosen = null;
+
+function setView(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  document.getElementById('t-cot').classList.toggle('on', v==='cotizar');
+  document.getElementById('t-base').classList.toggle('on', v==='base');
+  document.getElementById('t-cli').classList.toggle('on', v==='cliente');
+  if(v==='cliente') renderCliente();
+  if(v==='base') renderDB();
+  window.scrollTo(0,0);
+}
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ---- autocompletado ---- */
+const prodInput = document.getElementById('prod');
+const acList = document.getElementById('aclist');
+function filtrar(q){
+  q=q.trim().toLowerCase(); if(!q) return productos.slice(0,8);
+  const a=[],b=[]; productos.forEach(p=>{const n=p.nombre.toLowerCase(); if(n.startsWith(q))a.push(p); else if(n.includes(q))b.push(p);});
+  return a.concat(b).slice(0,10);
+}
+function showAC(){
+  const res=filtrar(prodInput.value);
+  if(!res.length){ acList.innerHTML='<div class="ac-empty">Sin coincidencias</div>'; acList.classList.add('show'); return; }
+  acList.innerHTML=res.map((p,i)=>`<div class="ac-item${i===sel?' active':''}" data-nm="${encodeURIComponent(p.nombre)}"><span class="nm">${p.nombre}</span><span class="pr">${MONEY(p.p1)} / ${p.unidad}</span></div>`).join('');
+  acList.classList.add('show');
+  acList.querySelectorAll('.ac-item').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault(); pick(decodeURIComponent(el.dataset.nm));}));
+}
+function pick(nombre){ chosen=productos.find(p=>p.nombre===nombre)||null; prodInput.value=chosen?chosen.nombre:nombre; acList.classList.remove('show'); sel=-1; actualizarModo(); document.getElementById('cant').focus(); }
+function actualizarModo(){ const m=document.getElementById('modo'); const t=chosen&&chosen.tambo>0; m.querySelector('option[value="tambo"]').disabled=!t; if(!t&&m.value==='tambo')m.value='normal'; }
+prodInput.addEventListener('input',()=>{chosen=null; sel=-1; showAC();});
+prodInput.addEventListener('focus',showAC);
+prodInput.addEventListener('keydown',e=>{
+  const items=acList.querySelectorAll('.ac-item');
+  if(e.key==='ArrowDown'){e.preventDefault(); sel=Math.min(sel+1,items.length-1); showAC();}
+  else if(e.key==='ArrowUp'){e.preventDefault(); sel=Math.max(sel-1,0); showAC();}
+  else if(e.key==='Enter'){e.preventDefault(); if(sel>=0&&items[sel])pick(decodeURIComponent(items[sel].dataset.nm)); else {const r=filtrar(prodInput.value); if(r.length)pick(r[0].nombre);}}
+  else if(e.key==='Escape'){acList.classList.remove('show');}
+});
+document.addEventListener('click',e=>{ if(!e.target.closest('.ac')) acList.classList.remove('show'); });
+document.getElementById('cant').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault(); agregar();} });
+
+/* ---- agregar ---- */
+function tier(q){ if(q<10)return{k:'1-9',key:'p1',cls:'t1'}; if(q<20)return{k:'10-19',key:'p2',cls:'t2'}; return{k:'20+',key:'p3',cls:'t3'}; }
+function agregar(){
+  if(!chosen){ const r=filtrar(prodInput.value); if(r.length===1){chosen=r[0]; prodInput.value=chosen.nombre;} }
+  if(!chosen){ toast('Elige un producto de la lista'); prodInput.focus(); return; }
+  const qty=parseFloat(document.getElementById('cant').value);
+  if(!qty||qty<=0){ toast('Escribe una cantidad'); document.getElementById('cant').focus(); return; }
+  const modo=document.getElementById('modo').value; let l;
+  if(modo==='tambo'){
+    if(!(chosen.tambo>0)){ toast('Este producto no tiene precio por tambo'); return; }
+    const t=Math.max(1,Math.round(qty));
+    l={nombre:chosen.nombre,unidad:chosen.unidad,cantidad:t,modo:'tambo',tierK:'TAMBO',cls:'tt',precioU:chosen.tambo,litros:t*170,importe:t*chosen.tambo,manual:false};
+  } else {
+    const t=tier(qty); const pu=Number(chosen[t.key])||0;
+    l={nombre:chosen.nombre,unidad:chosen.unidad,cantidad:qty,modo:'normal',tierK:t.k,cls:t.cls,precioU:pu,importe:qty*pu,manual:false};
+  }
+  lineas.push(l); renderLineas();
+  chosen=null; prodInput.value=''; document.getElementById('cant').value=''; document.getElementById('modo').value='normal'; prodInput.focus();
+}
+function borrar(i){ lineas.splice(i,1); renderLineas(); }
+function editPrecio(i,val){
+  const v=parseFloat(String(val).replace(/[^0-9.\-]/g,''))||0;
+  lineas[i].precioU=v; lineas[i].importe=lineas[i].cantidad*v; lineas[i].manual=true;
+  renderLineas();
+}
+function renderLineas(){
+  const c=document.getElementById('lineas');
+  if(!lineas.length){ c.innerHTML='<div class="empty"><b>Aún no agregas productos</b>Escribe arriba y presiona Enter.</div>'; calcular(); return; }
+  c.innerHTML=lineas.map((l,i)=>{
+    const cant=l.modo==='tambo'?`${l.cantidad} tambo${l.cantidad>1?'s':''}`:`${l.cantidad} ${l.unidad}`;
+    return `<div class="row">
+      <div class="c-prod"><span class="pnm">${l.nombre}</span>${l.modo==='tambo'?` <span class="lt">${l.litros} L</span>`:''}</div>
+      <div class="c-cant"><span class="ml">Cant.</span><span class="q tabnum">${cant}</span></div>
+      <div class="c-badge"><span class="badge ${l.manual?'man':l.cls}">${l.manual?'MANUAL':l.tierK}</span></div>
+      <div class="c-pu"><span class="ml">P. unit</span><input class="pu-in${l.manual?' man':''}" type="number" step="any" inputmode="decimal" value="${l.precioU}" onchange="editPrecio(${i},this.value)"></div>
+      <div class="c-imp"><span class="ml">Importe</span><span class="imp tabnum">${MONEY(l.importe)}</span></div>
+      <button class="del" onclick="borrar(${i})">×</button>
+    </div>`;
+  }).join('');
+  calcular();
+}
+function calcular(){
+  const sub=lineas.reduce((a,l)=>a+l.importe,0);
+  const dp=Math.min(100,Math.max(0,parseFloat(document.getElementById('t_desc').value)||0));
+  const descv=sub*dp/100, base=sub-descv;
+  const iva=document.getElementById('t_iva').checked?base*0.16:0, total=base+iva;
+  document.getElementById('t_sub').textContent=MONEY(sub);
+  document.getElementById('t_descv').textContent='-'+MONEY(descv);
+  document.getElementById('t_ivav').textContent=MONEY(iva);
+  document.getElementById('t_total').textContent=MONEY(total);
+  return {sub,descv,iva,total};
+}
+document.getElementById('t_desc').addEventListener('input',calcular);
+document.getElementById('t_iva').addEventListener('change',calcular);
+
+/* ---- folio / nueva ---- */
+function pad(n){ return 'COT-'+String(n).padStart(4,'0'); }
+function nueva(){
+  lineas=[]; folioNum++; LS.set('pleco_folio',folioNum);
+  document.getElementById('c_folio').value=pad(folioNum);
+  document.getElementById('c_cliente').value=''; document.getElementById('c_notas').value='';
+  document.getElementById('t_desc').value=0; document.getElementById('t_iva').checked=false;
+  renderLineas(); toast('Nueva cotización '+pad(folioNum)); setView('cotizar');
+}
+
+/* ---- base de datos ---- */
+function renderDB(){
+  const b=document.getElementById('dbbody');
+  b.innerHTML=productos.map((p,i)=>`<tr>
+    <td><input value="${(p.nombre||'').replace(/"/g,'&quot;')}" onchange="editP(${i},'nombre',this.value)"></td>
+    <td><input style="width:54px;text-align:center" value="${p.unidad||'L'}" onchange="editP(${i},'unidad',this.value)"></td>
+    <td class="num"><input type="number" step="any" value="${p.p1??''}" onchange="editP(${i},'p1',this.value)"></td>
+    <td class="num"><input type="number" step="any" value="${p.p2??''}" onchange="editP(${i},'p2',this.value)"></td>
+    <td class="num"><input type="number" step="any" value="${p.p3??''}" onchange="editP(${i},'p3',this.value)"></td>
+    <td class="num"><input type="number" step="any" value="${p.tambo??''}" onchange="editP(${i},'tambo',this.value)"></td>
+    <td><button class="delp" onclick="delP(${i})">×</button></td></tr>`).join('');
+  document.getElementById('dbcount').textContent=productos.length+' productos';
+}
+function editP(i,k,v){ productos[i][k]=(k==='nombre'||k==='unidad')?v:(parseFloat(v)||0); saveDB(); }
+function addProd(){ productos.unshift({nombre:'Nuevo producto',unidad:'L',p1:0,p2:0,p3:0,tambo:0}); saveDB(); renderDB(); }
+function delP(i){ if(confirm('¿Eliminar "'+productos[i].nombre+'"?')){ productos.splice(i,1); saveDB(); renderDB(); } }
+function saveDB(){ productos.sort((a,b)=>a.nombre.toLowerCase().localeCompare(b.nombre.toLowerCase())); LS.set('pleco_db',productos); }
+function resetDB(){ if(confirm('¿Restaurar a los precios de junio? Se pierden los cambios locales.')){ productos=JSON.parse(JSON.stringify(SEED)); saveDB(); renderDB(); toast('Precios de junio restaurados'); } }
+function exportDB(){ const blob=new Blob([JSON.stringify(productos,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='PLECO_precios_'+new Date().toISOString().slice(0,10)+'.json'; a.click(); toast('Respaldo descargado'); }
+
+/* ---- import archivo (json o csv) ---- */
+function importFile(inp){
+  const f=inp.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ try{
+    let d; const txt=r.result;
+    if(f.name.toLowerCase().endsWith('.csv')||txt.trim()[0]!=='['){ d=mapRows(parseCSV(txt)); }
+    else { d=JSON.parse(txt); }
+    if(Array.isArray(d)&&d.length){ productos=d; saveDB(); renderDB(); toast('Base importada ('+d.length+')'); }
+    else toast('Archivo no válido');
+  }catch(e){ toast('No se pudo leer el archivo'); } };
+  r.readAsText(f); inp.value='';
+}
+
+/* ---- CSV ---- */
+function parseCSV(text){
+  const rows=[]; let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else { if(c==='"')q=true; else if(c===','){row.push(cur);cur='';} else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur='';} else if(c!=='\r')cur+=c; }
+  }
+  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(x=>(x||'').trim()!==''));
+}
+function toNum(v){ return parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,''))||0; }
+function mapRows(rows){
+  if(!rows.length) return [];
+  const head=rows[0].map(h=>(h||'').toLowerCase());
+  const find=(...keys)=>{ for(let i=0;i<head.length;i++){ if(keys.some(k=>head[i].includes(k))) return i; } return -1; };
+  let iN=find('producto','nombre'), iU=find('unidad'), i1=find('1-9','1 - 9'), i2=find('10-19','10 - 19'), i3=find('20+','20 +','20 o','mayoreo'), iT=find('tambo');
+  if(iN<0)iN=0; if(iU<0)iU=1; if(i1<0)i1=2; if(i2<0)i2=3; if(i3<0)i3=4; if(iT<0)iT=5;
+  const out=[];
+  for(let r=1;r<rows.length;r++){ const row=rows[r]; const nm=(row[iN]||'').trim(); if(!nm) continue;
+    out.push({nombre:nm, unidad:(row[iU]||'L').trim()||'L', p1:toNum(row[i1]), p2:toNum(row[i2]), p3:toNum(row[i3]), tambo:toNum(row[iT])}); }
+  return out;
+}
+
+/* ---- sincronización Google Sheets ---- */
+function getSheetId(u){ const m=(u||'').match(/\/d\/([a-zA-Z0-9-_]+)/); return m?m[1]:null; }
+function jsonpSheet(id, ok, fail){
+  const cb='plecoCb_'+Math.random().toString(36).slice(2);
+  let done=false;
+  const s=document.createElement('script');
+  function cleanup(){ try{delete window[cb];}catch(e){window[cb]=undefined;} if(s.parentNode) s.parentNode.removeChild(s); }
+  window[cb]=function(resp){ if(done)return; done=true; cleanup(); ok(resp); };
+  s.onerror=function(){ if(done)return; done=true; cleanup(); fail(new Error('no_access')); };
+  s.src='https://docs.google.com/spreadsheets/d/'+id+'/gviz/tq?tqx=out:json;responseHandler:'+cb+'&headers=1';
+  document.body.appendChild(s);
+  setTimeout(()=>{ if(done)return; done=true; cleanup(); fail(new Error('timeout')); }, 12000);
+}
+function mapGviz(resp){
+  const cols=(resp.table.cols||[]).map(c=>String(c.label||c.id||'').toLowerCase());
+  const find=(...keys)=>{ for(let i=0;i<cols.length;i++){ if(keys.some(k=>cols[i].includes(k))) return i; } return -1; };
+  let iN=find('producto','nombre'), iU=find('unidad'), i1=find('1-9','1 - 9'), i2=find('10-19','10 - 19'), i3=find('20+','20 +','20 o','mayoreo'), iT=find('tambo');
+  if(iN<0)iN=0; if(iU<0)iU=1; if(i1<0)i1=2; if(i2<0)i2=3; if(i3<0)i3=4; if(iT<0)iT=5;
+  const cellv=(c,k)=>{ const x=c[k]; if(!x) return ''; return x.v!=null?x.v:(x.f!=null?x.f:''); };
+  const out=[];
+  (resp.table.rows||[]).forEach(r=>{ const c=r.c||[]; const nm=String(cellv(c,iN)||'').trim(); if(!nm) return;
+    out.push({nombre:nm, unidad:String(cellv(c,iU)||'L').trim()||'L', p1:toNum(cellv(c,i1)), p2:toNum(cellv(c,i2)), p3:toNum(cellv(c,i3)), tambo:toNum(cellv(c,iT))}); });
+  return out;
+}
+function setSyncStatus(date,err){
+  const el=document.getElementById('syncStatus');
+  if(err){ el.innerHTML='<span class="dot bad"></span>'+err; return; }
+  if(date){ el.innerHTML='<span class="dot ok"></span>Última sincronización: '+date.toLocaleString('es-MX'); LS.set('pleco_last_sync',date.toISOString()); }
+}
+function syncFromSheet(manual){
+  const url=(document.getElementById('sheetUrl').value||'').trim();
+  if(!url){ if(manual) toast('Pega primero el enlace de tu Google Sheet'); return; }
+  LS.set('pleco_sheet_url',url);
+  const id=getSheetId(url);
+  if(!id){ setSyncStatus(null,'El enlace no parece de Google Sheets — copia el enlace completo de la hoja.'); if(manual) toast('Enlace no válido'); return; }
+  if(manual) toast('Sincronizando…');
+  jsonpSheet(id, function(resp){
+    try{ const prods=mapGviz(resp); if(!prods.length) throw 0;
+      productos=prods; saveDB(); renderDB(); setSyncStatus(new Date());
+      if(manual) toast('Precios sincronizados ('+prods.length+')');
+    }catch(e){ setSyncStatus(null,'Se leyó la hoja, pero la primera fila debe tener los encabezados: Producto, Unidad, 1-9, 10-19, 20+, Tambo.'); }
+  }, function(){
+    setSyncStatus(null,'No se pudo leer la hoja. Compártela como "Cualquiera con el enlace: Lector" y revisa tu internet. Usando últimos precios guardados.');
+    if(manual) toast('No se pudo sincronizar — revisa la nota en pantalla');
+  });
+}
+document.getElementById('sheetUrl').addEventListener('change',()=>LS.set('pleco_sheet_url',document.getElementById('sheetUrl').value.trim()));
+document.getElementById('syncOnOpen').addEventListener('change',e=>LS.set('pleco_sync_on',e.target.checked));
+
+/* ---- vista cliente ---- */
+function renderCliente(){
+  const g=id=>document.getElementById(id).value;
+  document.getElementById('o_folio').textContent=g('c_folio')||pad(folioNum);
+  document.getElementById('o_cliente').textContent=g('c_cliente')||'—';
+  const f=g('c_fecha'); document.getElementById('o_fecha').textContent=f?new Date(f+'T00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'}):'—';
+  document.getElementById('o_vig').textContent=g('c_vig')||'—';
+  document.getElementById('o_vend').textContent=g('c_vend')||'—';
+  document.getElementById('o_pago').textContent=g('c_pago')||'—';
+  document.getElementById('o_wa').textContent=g('c_wa')||'—';
+  const nt=g('c_notas'); document.getElementById('o_notas').textContent=nt; document.getElementById('o_notaswrap').style.display=nt?'block':'none';
+  document.getElementById('o_lineas').innerHTML=lineas.length?lineas.map(l=>{
+    const cant=l.modo==='tambo'?`${l.cantidad} tambo${l.cantidad>1?'s':''} · ${l.litros} L`:`${l.cantidad} ${l.unidad}`;
+    return `<tr><td class="pnm">${l.nombre} <span class="tg">(${l.tierK})</span></td><td>${cant}</td><td>${MONEY(l.precioU)}</td><td>${MONEY(l.importe)}</td></tr>`;
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--steel);padding:24px">Sin productos</td></tr>';
+  const t=calcular();
+  document.getElementById('o_sub').textContent=MONEY(t.sub);
+  document.getElementById('o_desc').textContent='-'+MONEY(t.descv); document.getElementById('o_descrow').style.display=t.descv>0?'flex':'none';
+  document.getElementById('o_iva').textContent=MONEY(t.iva); document.getElementById('o_ivarow').style.display=t.iva>0?'flex':'none';
+  document.getElementById('o_total').textContent=MONEY(t.total);
+}
+function descargarPDF(){ window.print(); }
+function descargarImg(){
+  if(typeof html2canvas==='undefined'){ toast('La imagen necesita internet — usa PDF'); return; }
+  toast('Generando imagen…');
+  html2canvas(document.getElementById('hoja'),{scale:2,backgroundColor:'#fff'}).then(cv=>{ const a=document.createElement('a'); a.href=cv.toDataURL('image/png'); a.download=(document.getElementById('c_folio').value||'cotizacion')+'.png'; a.click(); }).catch(()=>toast('No se pudo generar la imagen'));
+}
+
+/* ---- init ---- */
+(function init(){
+  document.getElementById('c_folio').value=pad(folioNum);
+  document.getElementById('c_fecha').value=new Date().toISOString().slice(0,10);
+  const savedUrl=LS.get('pleco_sheet_url',''); if(savedUrl) document.getElementById('sheetUrl').value=savedUrl;
+  const syncOn=LS.get('pleco_sync_on',true); document.getElementById('syncOnOpen').checked=syncOn;
+  const last=LS.get('pleco_last_sync',null); if(last) setSyncStatus(new Date(last));
+  renderLineas();
+  if(savedUrl && syncOn) syncFromSheet(false);
+})();
+</script>
+</body>
+</html>
